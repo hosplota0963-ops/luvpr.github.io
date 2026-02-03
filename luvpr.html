@@ -1,0 +1,626 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Heart, Lock, Key, Star, Gift, Smile, Music, RefreshCcw, Calendar, Smartphone, Utensils, Zap, Crown, Play } from 'lucide-react';
+
+// --- ตั้งค่า ---
+const CONFIG = {
+  partnerName: "วริน",
+  pinCode: "5463", // 5 เมษา 63
+  youtubeId: "NuhHd0hOOg8", // เพลง
+  youtubeStart: 75 // วินาทีที่ 75 (1:15)
+};
+
+// --- ข้อมูลเกม (แก้ไข: เก็บเป็น Component เพื่อแก้บัค) ---
+const GAME_ASSETS = [
+  { type: 'img', src: "https://img2.pic.in.th/image016efecd8b23632d.png" },
+  { type: 'img', src: "https://img5.pic.in.th/file/secure-sv1/image76f1c6cdaa907df6.png" },
+  { type: 'img', src: "https://img5.pic.in.th/file/secure-sv1/image5fb85d8fceabe372.png" },
+  { type: 'img', src: "https://img5.pic.in.th/file/secure-sv1/imagee21d38d59fa8e1a1.png" },
+  // เปลี่ยนวิธีเก็บ Icon เป็น Component Reference
+  { type: 'icon', Icon: Heart, color: "text-pink-500" },
+  { type: 'icon', Icon: Star, color: "text-yellow-400" },
+  { type: 'icon', Icon: Gift, color: "text-purple-500" },
+  { type: 'icon', Icon: Smile, color: "text-blue-400" },
+];
+
+const IMAGES = {
+  loginHeader: "https://img2.pic.in.th/9bdc46264e7746bb8f4d6e7efe918661.jpg",
+  gameOver: "https://img5.pic.in.th/file/secure-sv1/e3ffbc071f45536bd80c00a316b1763f7642700ccddd7aaa.jpg"
+};
+
+// ข้อมูลคำถาม
+const QUIZ_QUESTIONS = [
+  {
+    id: 1,
+    question: "เราคบกันวันที่เท่าไหร่?",
+    options: ["5 เมษา 2563", "4 เมษา 2563", "1 มกรา 2564"],
+    correctAnswer: "5 เมษา 2563",
+    Icon: Calendar,
+    iconColor: "text-pink-500",
+    bgColor: "bg-pink-100"
+  },
+  {
+    id: 2,
+    question: "ใครดื้อที่สุดในโลก?",
+    options: ["เค้าเอง", "วรินไงจะใครล่ะ", "ไม่มีใครดื้อเลย"],
+    correctAnswer: "วรินไงจะใครล่ะ",
+    Icon: Crown,
+    iconColor: "text-yellow-500",
+    bgColor: "bg-yellow-100"
+  },
+  {
+    id: 3,
+    question: "เวลาเค้างอน ต้องง้อยังไง?",
+    options: ["ให้เบิ่ง", "ปล่อยไว้งั้นแหละ", "ซื้อขนมมาให้"],
+    correctAnswer: "ให้เบิ่ง",
+    Icon: Utensils,
+    iconColor: "text-orange-500",
+    bgColor: "bg-orange-100"
+  },
+  {
+    id: 4,
+    question: "เราเจอกันที่ไหน",
+    options: ["facebook", "tiktok", "IG"],
+    correctAnswer: "tiktok",
+    Icon: Smartphone,
+    iconColor: "text-blue-500",
+    bgColor: "bg-blue-100"
+  },
+  {
+    id: 5,
+    question: "รักเค้าไหม?",
+    options: ["รักที่สุดในโลก!", "รัก", "รักมากๆๆๆๆๆ"],
+    correctAnswer: "รักที่สุดในโลก!",
+    Icon: Heart,
+    iconColor: "text-red-500",
+    bgColor: "bg-red-100"
+  }
+];
+
+// --- Screens Components ---
+
+// 1. Intro Screen
+const IntroScreen = ({ onReady }) => {
+  const [loading, setLoading] = useState(true);
+  const [yesScale, setYesScale] = useState(1);
+  const [noCount, setNoCount] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleNoClick = () => {
+    setYesScale(prev => prev + 0.3);
+    setNoCount(prev => prev + 1);
+  };
+
+  const getNoText = () => {
+    const texts = ["ไม่อะ", "ขี้เกียจ", "แน่ใจหรอ?", "อย่าดื้อสิ", "กดพร้อมเดี๋ยวนี้!", "โหดร้ายยย"];
+    return texts[Math.min(noCount, texts.length - 1)];
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-pink-50">
+        <div className="relative animate-float">
+          <div className="w-24 h-24 border-4 border-pink-200 border-t-pink-400 rounded-full animate-spin"></div>
+          <Heart className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-pink-400 animate-pulse" size={32} fill="currentColor"/>
+        </div>
+        <p className="mt-6 text-pink-400 font-medium animate-pulse text-lg tracking-wide">กำลังปรุงความหวาน...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-indigo-50 p-4 relative overflow-hidden">
+      <div className="z-10 text-center max-w-md w-full bg-white/70 backdrop-blur-xl p-10 rounded-[2rem] shadow-2xl border border-white/60 animate-jelly">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">พร้อมเล่นมั้ยอิปีศาจหมู? 🐷</h1>
+        <p className="text-gray-500 mb-8">มีอะไรจะเซอร์ไพรส์แหละ...</p>
+        
+        <div className="flex flex-col items-center gap-4">
+          <button
+            onClick={onReady}
+            style={{ transform: `scale(${yesScale})` }}
+            className="group relative bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-bold py-4 px-12 rounded-full shadow-lg hover:shadow-pink-300/50 transition-all duration-300 flex items-center gap-2 overflow-hidden active:scale-95"
+          >
+            <span className="relative z-10 flex items-center gap-2">พร้อมมาก! <Heart size={20} fill="white" className="animate-bounce" /></span>
+          </button>
+          
+          <button
+            onClick={handleNoClick}
+            className="text-gray-400 hover:text-rose-400 text-sm font-medium py-2 px-6 rounded-full transition-colors hover:bg-rose-50"
+          >
+            {getNoText()}
+          </button>
+        </div>
+      </div>
+
+      {/* Background elements */}
+      <div className="absolute top-20 left-10 text-pink-200 animate-float-slow"><Heart size={80} /></div>
+      <div className="absolute bottom-20 right-10 text-indigo-200 animate-float-slow delay-1000"><Star size={60} /></div>
+    </div>
+  );
+};
+
+// 2. Login Screen
+const LoginScreen = ({ onUnlock }) => {
+  const [pinInput, setPinInput] = useState('');
+  const [error, setError] = useState('');
+
+  const handlePinSubmit = (e) => {
+    e.preventDefault();
+    if (pinInput === CONFIG.pinCode) {
+      setError('');
+      onUnlock();
+    } else {
+      setError('ลืมหรออีแก่ (5463 ไง)');
+      setPinInput('');
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-pink-50 p-4 animate-fade-in-up">
+      <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full text-center border-4 border-white ring-4 ring-pink-50 relative overflow-hidden">
+        <div className="mb-8 rounded-2xl overflow-hidden shadow-lg border-4 border-pink-100 transform rotate-2 hover:rotate-0 transition-all duration-500 ease-out-back">
+           <img src={IMAGES.loginHeader} alt="Welcome" className="w-full h-48 object-cover" />
+        </div>
+        
+        <div className="flex items-center justify-center gap-2 mb-2">
+           <Lock className="text-pink-400 w-5 h-5" />
+           <h1 className="text-xl font-bold text-gray-700">Unlock My Heart ❤️</h1>
+        </div>
+        <p className="text-gray-400 mb-6 text-sm">รหัสวันครบรอบ (เลข 4 ตัว)</p>
+        
+        <form onSubmit={handlePinSubmit} className="space-y-4">
+          <input
+            autoFocus
+            type="tel"
+            maxLength="4"
+            value={pinInput}
+            onChange={(e) => setPinInput(e.target.value)}
+            className="w-full text-center text-3xl font-bold tracking-[0.5em] p-4 border-2 border-pink-100 bg-pink-50/50 rounded-2xl focus:outline-none focus:border-pink-400 focus:bg-white text-pink-500 transition-all duration-300 placeholder-pink-200"
+            placeholder="••••"
+          />
+          {error && <p className="text-red-400 text-xs animate-bounce font-bold">{error}</p>}
+          <button type="submit" className="w-full bg-pink-400 hover:bg-pink-500 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-pink-200 transition-all active:scale-95 flex items-center justify-center gap-2">
+            เปิดใจหน่อย <Key size={18} />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// 3. Quiz Screen
+const QuizScreen = ({ onComplete, onFail }) => {
+  const [currentQIndex, setCurrentQIndex] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(5);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  useEffect(() => {
+    setTimeLeft(5);
+    setIsTransitioning(false);
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 0) {
+          clearInterval(timer);
+          onFail();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [currentQIndex, onFail]);
+
+  const handleAnswer = (option) => {
+    if (option === QUIZ_QUESTIONS[currentQIndex].correctAnswer) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        if (currentQIndex < QUIZ_QUESTIONS.length - 1) {
+          setCurrentQIndex(prev => prev + 1);
+        } else {
+          onComplete();
+        }
+      }, 300);
+    } else {
+      onFail();
+    }
+  };
+
+  const currentQ = QUIZ_QUESTIONS[currentQIndex];
+  const CurrentIcon = currentQ.Icon;
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50 p-4 transition-colors duration-500">
+      
+      {/* Timer & Progress */}
+      <div className="w-full max-w-sm mb-6 flex justify-between items-center px-2">
+        <div className="bg-white/80 backdrop-blur px-4 py-1.5 rounded-full shadow-sm text-blue-500 text-sm font-bold border border-blue-100">
+          ข้อที่ {currentQIndex + 1}/{QUIZ_QUESTIONS.length}
+        </div>
+        <div className={`bg-white/80 backdrop-blur px-4 py-1.5 rounded-full shadow-sm text-sm font-bold border ${timeLeft <= 2 ? 'text-red-500 border-red-100 animate-pulse' : 'text-blue-500 border-blue-100'}`}>
+          ⏰ {timeLeft}s
+        </div>
+      </div>
+
+      <div className={`bg-white p-8 rounded-[2rem] shadow-xl max-w-sm w-full relative transition-all duration-300 transform ${isTransitioning ? 'scale-90 opacity-0' : 'scale-100 opacity-100 animate-jelly'}`}>
+        
+        {/* Icon Circle */}
+        <div className="flex justify-center mb-6">
+          <div className={`${currentQ.bgColor} w-24 h-24 rounded-full flex items-center justify-center shadow-inner animate-float`}>
+            <CurrentIcon size={48} className={currentQ.iconColor} />
+          </div>
+        </div>
+
+        <div className="text-center mb-8">
+          <h2 className="text-xl font-bold text-gray-800 leading-relaxed">{currentQ.question}</h2>
+        </div>
+        
+        <div className="space-y-3">
+          {currentQ.options.map((opt, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleAnswer(opt)}
+              className="w-full bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 py-4 rounded-xl font-medium border border-gray-100 hover:border-blue-200 transition-all duration-300 active:scale-95 shadow-sm hover:shadow-md"
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 4. Game Over Screen
+const GameOverScreen = ({ onRestart }) => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 p-4 text-center">
+     <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full animate-shake border-4 border-red-100">
+        <h2 className="text-3xl font-bold text-red-500 mb-6">แย่จัง... 😭</h2>
+        <div className="mb-6 rounded-2xl overflow-hidden border-2 border-red-50 shadow-inner">
+          <img src={IMAGES.gameOver} alt="Sad" className="w-full object-cover" />
+        </div>
+        <p className="text-gray-500 mb-8">ตอบไม่ทันหรือตอบผิดน้าาา<br/>ลองใหม่อีกทีนะคนเก่ง</p>
+        
+        <button 
+          onClick={onRestart}
+          className="w-full bg-red-400 hover:bg-red-500 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-red-200 transition-all transform active:scale-95 flex items-center justify-center gap-2"
+        >
+          <RefreshCcw size={20} /> เริ่มใหม่
+        </button>
+     </div>
+  </div>
+);
+
+// 5. Memory Game Screen
+const MemoryGameScreen = ({ onWin }) => {
+  const [cards, setCards] = useState([]);
+  const [flipped, setFlipped] = useState([]);
+  const [solved, setSolved] = useState([]);
+  const [disabled, setDisabled] = useState(false);
+
+  useEffect(() => {
+    // Generate cards: Create copies with unique IDs
+    const generatedCards = [...GAME_ASSETS, ...GAME_ASSETS]
+      .map((asset, index) => ({ id: index, ...asset }))
+      .sort(() => Math.random() - 0.5);
+    setCards(generatedCards);
+  }, []);
+
+  useEffect(() => {
+    if (flipped.length === 2) {
+      setDisabled(true);
+      const [id1, id2] = flipped;
+      const card1 = cards.find(c => c.id === id1);
+      const card2 = cards.find(c => c.id === id2);
+
+      // Check Match
+      const isMatch = (card1.type === 'img' && card1.src === card2.src) ||
+                      (card1.type === 'icon' && card1.Icon === card2.Icon); 
+
+      if (isMatch) {
+        setSolved([...solved, id1, id2]);
+        setFlipped([]);
+        setDisabled(false);
+      } else {
+        setTimeout(() => { setFlipped([]); setDisabled(false); }, 800);
+      }
+    }
+  }, [flipped, cards, solved]);
+
+  useEffect(() => {
+    if (cards.length > 0 && solved.length === cards.length) setTimeout(onWin, 1000);
+  }, [solved, cards, onWin]);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-purple-50 p-4">
+      <div className="bg-white/80 backdrop-blur-md p-6 rounded-[2rem] shadow-xl w-full max-w-md animate-fade-in-up">
+        <h2 className="text-2xl font-bold text-purple-600 mb-6 flex items-center justify-center gap-2">
+          <Star className="fill-current animate-spin-slow" /> จับคู่ภาพหัวใจ
+        </h2>
+        <div className="grid grid-cols-4 gap-3 aspect-square">
+          {cards.map((card) => {
+            const IconComponent = card.Icon;
+            return (
+              <div
+                key={card.id}
+                onClick={() => !disabled && !flipped.includes(card.id) && !solved.includes(card.id) && setFlipped([...flipped, card.id])}
+                className={`relative w-full h-full cursor-pointer transition-all duration-500 transform ${
+                  flipped.includes(card.id) || solved.includes(card.id) ? 'rotate-y-180' : 'hover:scale-105'
+                }`}
+                style={{ perspective: '1000px' }}
+              >
+                {/* Card Back */}
+                <div className={`absolute w-full h-full bg-purple-200 rounded-xl flex items-center justify-center border-2 border-white shadow-sm backface-hidden transition-all duration-300 ${flipped.includes(card.id) || solved.includes(card.id) ? 'opacity-0 rotate-y-180' : 'opacity-100'}`}>
+                  <Heart className="text-white" size={20} fill="currentColor" />
+                </div>
+                {/* Card Front */}
+                <div className={`absolute w-full h-full bg-white rounded-xl flex items-center justify-center border-2 border-purple-100 shadow-md backface-hidden overflow-hidden transition-all duration-300 ${flipped.includes(card.id) || solved.includes(card.id) ? 'opacity-100 rotate-y-0' : 'opacity-0 -rotate-y-180'}`}>
+                  {card.type === 'img' ? (
+                    <img src={card.src} className="w-full h-full object-cover" />
+                  ) : (
+                    <IconComponent className={`${card.color} w-8 h-8`} />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 6. Catch Heart Game
+const CatchHeartGame = ({ onWin }) => {
+  const [score, setScore] = useState(0);
+  const [hearts, setHearts] = useState([]);
+  const [gameWon, setGameWon] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (gameWon) return;
+      const id = Date.now() + Math.random();
+      const left = Math.random() * 80 + 10;
+      setHearts(prev => [...prev, { id, left, top: -10, scale: Math.random() * 0.5 + 0.8 }]);
+    }, 600);
+    return () => clearInterval(interval);
+  }, [gameWon]);
+
+  useEffect(() => {
+    const loop = setInterval(() => {
+      if (gameWon) return;
+      setHearts(prev => 
+        prev.map(h => ({ ...h, top: h.top + 1.5 }))
+            .filter(h => h.top < 100)
+      );
+    }, 20);
+    return () => clearInterval(loop);
+  }, [gameWon]);
+
+  useEffect(() => {
+    if (score >= 10 && !gameWon) {
+      setGameWon(true);
+      setTimeout(onWin, 1000);
+    }
+  }, [score, gameWon, onWin]);
+
+  const popHeart = (id) => {
+    setScore(prev => prev + 1);
+    setHearts(prev => prev.filter(h => h.id !== id));
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-rose-50 overflow-hidden relative touch-none select-none font-sans">
+      <div className="absolute top-10 z-20 flex flex-col items-center animate-jelly">
+        <div className="bg-white/90 backdrop-blur px-6 py-2 rounded-full shadow-lg border border-rose-100 flex items-center gap-3">
+          <span className="text-rose-500 font-bold text-xl">เก็บหัวใจ ❤️</span>
+          <span className="bg-rose-100 text-rose-600 px-3 py-1 rounded-full font-bold">{score}/10</span>
+        </div>
+      </div>
+      
+      {hearts.map(h => (
+        <div
+          key={h.id}
+          onMouseDown={() => popHeart(h.id)}
+          onTouchStart={() => popHeart(h.id)}
+          className="absolute cursor-pointer hover:scale-110 active:scale-90 transition-transform duration-100"
+          style={{ 
+            left: `${h.left}%`, 
+            top: `${h.top}%`,
+            transform: `scale(${h.scale})`,
+          }}
+        >
+          <div className="bg-white p-2 rounded-full shadow-md">
+             <Heart fill="#f43f5e" className="text-rose-500 w-10 h-10 drop-shadow-sm" />
+          </div>
+        </div>
+      ))}
+
+      {gameWon && (
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-30 animate-fade-in">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl text-center animate-jelly">
+            <h1 className="text-4xl font-bold text-rose-500 mb-2">เก่งมาก! 🎉</h1>
+            <p className="text-gray-400">ไปรับรางวัลกัน...</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 7. Surprise Screen (Updated with Click-to-Play to fix browser policies)
+const SurpriseScreen = ({ partnerName }) => {
+  const [isOpened, setIsOpened] = useState(false);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-rose-50 relative overflow-hidden text-center p-6">
+      
+      {!isOpened ? (
+        <div className="z-10 animate-fade-in-up">
+          <button 
+            onClick={() => setIsOpened(true)}
+            className="group relative"
+          >
+             <Gift size={120} className="text-pink-500 animate-bounce drop-shadow-2xl" strokeWidth={1.5} />
+             <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/80 backdrop-blur px-6 py-2 rounded-full text-pink-500 font-bold shadow-lg">
+                กดเพื่อเปิดของขวัญ 🎁
+             </div>
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* YouTube Embed - Active after click */}
+          <div className="absolute bottom-10 z-20">
+             <div className="bg-white/90 backdrop-blur p-2 rounded-xl shadow-lg border border-pink-100 flex items-center gap-3 pr-4 animate-fade-in-up">
+               <div className="w-12 h-12 rounded-lg overflow-hidden relative">
+                 <iframe 
+                    width="200" 
+                    height="200" 
+                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-150 pointer-events-none"
+                    src={`https://www.youtube.com/embed/${CONFIG.youtubeId}?autoplay=1&start=${CONFIG.youtubeStart}&loop=1&playlist=${CONFIG.youtubeId}&controls=0&showinfo=0&rel=0`} 
+                    title="Music" 
+                    allow="autoplay; encrypted-media" 
+                    allowFullScreen
+                  />
+               </div>
+               <div className="text-left">
+                  <p className="text-xs text-gray-400 font-medium">Now Playing</p>
+                  <p className="text-sm font-bold text-pink-500 flex items-center gap-1">
+                    <Music size={12} className="animate-spin-slow" /> นี่ฉันเองคนที่...
+                  </p>
+               </div>
+             </div>
+          </div>
+
+          <div className="relative w-64 h-64 mb-8">
+            <div className="absolute inset-0 bg-pink-200 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
+            
+            {/* SVG Drawing Animation */}
+            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-2xl">
+              <path d="M50 70 Q30 30 70 40 T130 40 Q170 30 150 70 Q180 100 160 140 Q140 180 100 180 Q60 180 40 140 Q20 100 50 70" fill="none" stroke="#EC4899" strokeWidth="4" strokeLinecap="round" className="animate-draw-bear" />
+              <path d="M55 55 Q45 45 60 48" fill="none" stroke="#F472B6" strokeWidth="3" strokeLinecap="round" className="animate-draw-bear delay-1" />
+              <path d="M140 48 Q155 45 145 55" fill="none" stroke="#F472B6" strokeWidth="3" strokeLinecap="round" className="animate-draw-bear delay-1" />
+              <circle cx="75" cy="90" r="6" fill="#374151" className="animate-pop-in delay-2" />
+              <circle cx="125" cy="90" r="6" fill="#374151" className="animate-pop-in delay-2" />
+              <ellipse cx="100" cy="110" rx="15" ry="10" fill="#FBCFE8" className="animate-pop-in delay-3" />
+              <circle cx="100" cy="108" r="4" fill="#374151" className="animate-pop-in delay-3" />
+              <path d="M100 112 Q100 120 95 120 M100 112 Q100 120 105 120" stroke="#374151" strokeWidth="2" fill="none" className="animate-pop-in delay-3" />
+              <path d="M100 145 L90 135 A5 5 0 0 1 100 130 A5 5 0 0 1 110 135 L100 145" fill="#EF4444" className="animate-beat" />
+            </svg>
+          </div>
+
+          <div className="z-10 animate-fade-in-up delay-1000 max-w-md w-full">
+            <div className="bg-white/80 backdrop-blur-md p-8 rounded-[2rem] shadow-xl border border-white/50 animate-float-slow">
+                <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 mb-6 drop-shadow-sm">
+                รัก {partnerName} นะค้าบ!
+                </h1>
+                <p className="text-gray-600 text-lg mb-8 leading-relaxed font-light">
+                เก่งมากเลยที่เล่นจนจบ!
+                <br />ขอบคุณที่เป็นความสุขของเค้านะ
+                <br />อยู่ด้วยกันไปนานๆ นะไอปีศาจหมู ❤️
+                </p>
+
+                <div className="flex justify-center gap-6 text-pink-500 mb-6">
+                    <div className="bg-pink-50 p-3 rounded-full shadow-sm"><Heart fill="#EC4899" className="animate-pulse w-6 h-6" /></div>
+                    <div className="bg-yellow-50 p-3 rounded-full shadow-sm"><Star fill="#FBBF24" className="animate-spin-slow w-6 h-6 text-yellow-400" /></div>
+                    <div className="bg-pink-50 p-3 rounded-full shadow-sm"><Heart fill="#EC4899" className="animate-pulse w-6 h-6" /></div>
+                </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Confetti */}
+      {isOpened && (
+        <div className="fixed inset-0 pointer-events-none flex justify-center overflow-hidden">
+            {[...Array(30)].map((_, i) => (
+              <div
+                  key={i}
+                  className="absolute w-3 h-3 rounded-lg opacity-0 animate-confetti"
+                  style={{
+                    backgroundColor: ['#F9A8D4', '#FCD34D', '#93C5FD', '#A78BFA'][Math.floor(Math.random() * 4)],
+                    left: `${Math.random() * 100}%`,
+                    top: `-10%`,
+                    animationDelay: `${Math.random() * 3}s`,
+                    animationDuration: `${Math.random() * 4 + 3}s`
+                  }}
+              />
+            ))}
+        </div>
+      )}
+      
+      <style jsx>{`
+        /* Custom Animations */
+        @keyframes jelly {
+            0%, 100% { transform: scale(1, 1); }
+            25% { transform: scale(0.9, 1.1); }
+            50% { transform: scale(1.1, 0.9); }
+            75% { transform: scale(0.95, 1.05); }
+        }
+        .animate-jelly { animation: jelly 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        .animate-float-slow { animation: float-slow 4s ease-in-out infinite; }
+        
+        .animate-draw-bear { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw 3s ease-out forwards; }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+        
+        .delay-1 { animation-delay: 1s; }
+        .delay-2 { animation-delay: 2s; opacity: 0; animation-fill-mode: forwards; }
+        .delay-3 { animation-delay: 2.5s; opacity: 0; animation-fill-mode: forwards; }
+        
+        .animate-pop-in { animation: popIn 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .animate-beat { animation: beat 1.2s infinite; transform-origin: center; transform-box: fill-box; }
+        @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+        
+        @keyframes confetti { 
+            0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; } 
+            100% { transform: translateY(100vh) rotate(720deg) scale(0.5); opacity: 0; } 
+        }
+        .animate-confetti { animation-name: confetti; animation-timing-function: linear; animation-iteration-count: infinite; }
+        
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; opacity: 0; transform: translateY(30px); }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .rotate-y-0 { transform: rotateY(0deg); }
+        .ease-out-back { transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+      `}</style>
+    </div>
+  );
+};
+
+// --- Main App ---
+export default function App() {
+  const [stage, setStage] = useState('intro'); // intro, login, quiz, gameover, memory, catch, surprise
+
+  return (
+    <>
+      {stage === 'intro' && <IntroScreen onReady={() => setStage('login')} />}
+      {stage === 'login' && <LoginScreen onUnlock={() => setStage('quiz')} />}
+      
+      {stage === 'quiz' && (
+        <QuizScreen 
+          onComplete={() => setStage('memory')} 
+          onFail={() => setStage('gameover')} 
+        />
+      )}
+      
+      {stage === 'gameover' && <GameOverScreen onRestart={() => setStage('quiz')} />}
+      
+      {stage === 'memory' && <MemoryGameScreen onWin={() => setStage('catch')} />}
+      
+      {stage === 'catch' && <CatchHeartGame onWin={() => setStage('surprise')} />}
+      
+      {stage === 'surprise' && <SurpriseScreen partnerName={CONFIG.partnerName} />}
+    </>
+  );
+}
